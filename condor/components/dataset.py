@@ -30,18 +30,19 @@ class SpacingDataset(Dataset):
         _, src_space = generate_x_y(text_wo_space)
         _, target = generate_x_y(tgt)
 
-        change_cnt = random.sample(range(sum(src_space) + 1), 1)[0]
-        change_idx = random.sample([i for i, v in enumerate(src_space) if v == 1], change_cnt)
-        if change_idx:
-            for i in change_idx:
-                src_space[i] = 0
+        # change_cnt = random.sample(range(sum(src_space) + 1), 1)[0]
+        # change_idx = random.sample([i for i, v in enumerate(src_space) if v == 1], change_cnt)
+        # if change_idx:
+        #     for i in change_idx:
+        #         src_space[i] = 0
 
         if len(target) < self.max_len:
             target = target + [self.ignore_index] * (self.max_len - len(target))
-            src_space = src_space + [self.ignore_index] * (self.max_len - len(target))
+            src_space = src_space + [self.ignore_index] * (self.max_len - len(src_space))
         else:
             target = target[:self.max_len]
             src_space = src_space[:self.max_len]
+
         return np.array(src_id), np.array(src_space), np.array(target)
 
     def _tokenize(self, tokenizer, max_len, sent):
