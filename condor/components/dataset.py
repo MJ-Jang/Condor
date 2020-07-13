@@ -9,7 +9,7 @@ from condor.util import generate_x_y, decode
 
 
 class SpacingDataset(Dataset):
-    def __init__(self, tok: CharacterTokenizer, sents, max_len, noise_prob = 0.2):
+    def __init__(self, tok: CharacterTokenizer, sents, max_len, noise_prob=0.2):
         self.tok = tok
         self.max_len = max_len
         self.data = sents
@@ -35,8 +35,8 @@ class SpacingDataset(Dataset):
             current_space += [2] * (self.max_len - len(current_space))
         else:
             inputs = inputs[:self.max_len]
-            target = inputs[:self.max_len]
-            current_space = inputs[:self.max_len]
+            target = target[:self.max_len]
+            current_space = current_space[:self.max_len]
 
         return np.array(inputs), np.array(current_space), np.array(target)
 
