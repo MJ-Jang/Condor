@@ -92,9 +92,8 @@ class TransformerSpaceCorrector(nn.Module):
         s = self.label_embedding(space_id) * math.sqrt(self.d_model)
         s = self.position_embedding(s)
         s = s.transpose(1, 0)
-        print(x.device, s.device)
         x = x + s
-        print(x.device)
+
         seq_mask = self._generate_square_subsequent_mask(len(x)).to(x.device)
 
         # S * S
