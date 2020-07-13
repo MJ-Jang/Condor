@@ -53,8 +53,8 @@ class KorSpaceCorrector:
     def correct(self, text: str):
         x, space_id = generate_x_y(text)
         src_id = self.tok.tokenize(''.join(x))
-        src_id = torch.LongTensor([src_id])
-        space_id_tensor = torch.LongTensor([space_id])
+        src_id = torch.LongTensor([src_id]).to(self.device)
+        space_id_tensor = torch.LongTensor([space_id]).to(self.device)
 
         logits = self.model(src_id, space_id_tensor).detach()
         logits = self.softmax(logits)
