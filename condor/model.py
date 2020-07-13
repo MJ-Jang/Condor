@@ -91,7 +91,7 @@ class KorSpaceCorrector:
 
         optimizer = optim.Adam(self.model.parameters(), lr=lr)
 
-        dataset = SpacingDataset(self.tok, sents, kwargs['max_len'], kwargs['noise_prob'])
+        dataset = SpacingDataset(self.tok, sents, kwargs['max_len'])
         dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=kwargs['num_workers'])
 
         best_loss = 1e5

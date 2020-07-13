@@ -10,46 +10,47 @@ from condor.util import generate_x_y, decode
 
 
 class SpacingDataset(Dataset):
-    def __init__(self, tok: CharacterTokenizer, sents, max_len, noise_prob=0.2):
+    def __init__(self, tok: CharacterTokenizer, sents, max_len):
         self.tok = tok
         self.max_len = max_len
         self.data = sents
         self.pad_id = tok.token_to_idx(tok._pad_token)
-        self.noise_prob = noise_prob
         self.ignore_index = 2
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        sent = self.data[idx]
-        char_list, target = generate_x_y(sent)
-        inputs = [self.tok.token_to_idx(t) for t in char_list]
-        if random.random() <= self.noise_prob:
-            current_space = self.generate_noise(target, self.noise_prob)
-        else:
-            current_space = copy.deepcopy(target)
+        # tgt
+        tgt = self.data[idx]
 
-        if len(inputs) <= self.max_len:
-            inputs += [self.pad_id] * (self.max_len - len(inputs))
-            target += [self.ignore_index] * (self.max_len - len(target))
-            current_space += [self.ignore_index] * (self.max_len - len(current_space))
+        # sample src
+        text_wo_space = tgt.replace(' ', '')
+        src_id = self._tokenize(self.tok, self.max_len, text_wo_space)
+        _, src_space = generate_x_y(text_wo_space)
+        _, target = generate_x_y(tgt)
+
+        change_cnt = random.sample(range(sum(src_space) + 1), 1)[0]
+        change_idx = random.sample([i for i, v in enumerate(src_space) if v == 1], change_cnt)
+        if change_idx:
+            for i in change_idx:
+                src_space[i] = 0
+
+        if len(target) < self.max_len:
+            target = target + [self.ignore_index] * (self.max_len - len(target))
+            src_space = src_space + [self.ignore_index] * (self.max_len - len(target))
         else:
-            inputs = inputs[:self.max_len]
             target = target[:self.max_len]
-            current_space = current_space[:self.max_len]
+            src_space = src_space[:self.max_len]
+        return np.array(src_id), np.array(src_space), np.array(target)
 
-        return np.array(inputs), np.array(current_space), np.array(target)
+    def _tokenize(self, tokenizer, max_len, sent):
+        tokens = tokenizer.tokenize(sent)
 
-    @staticmethod
-    def generate_noise(space_idxs: list, noise_prob: float = 0.2):
-        outp = []
-        for i in space_idxs:
-            if random.random() <= noise_prob:
-                if i == 0:
-                    outp.append(1)
-                elif i == 1:
-                    outp.append(0)
-            else:
-                outp.append(i)
-        return outp
+        if len(tokens) < max_len:
+            tokens = tokens + [self.pad_id] * (max_len - len(tokens))
+        elif len(tokens) == 0:
+            tokens += [0]
+        else:
+            tokens = tokens[:max_len]
+        return tokens
