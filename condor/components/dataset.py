@@ -1,6 +1,7 @@
 import random
 import torch
 import numpy as np
+import copy
 
 from torch.utils.data.dataset import Dataset
 
@@ -27,12 +28,12 @@ class SpacingDataset(Dataset):
         if random.random() <= self.noise_prob:
             current_space = self.generate_noise(target, self.noise_prob)
         else:
-            current_space = target
+            current_space = copy.deepcopy(target)
 
         if len(inputs) <= self.max_len:
             inputs += [self.pad_id] * (self.max_len - len(inputs))
-            target += [2] * (self.max_len - len(target))
-            current_space += [2] * (self.max_len - len(current_space))
+            target += [self.ignore_index] * (self.max_len - len(target))
+            current_space += [self.ignore_index] * (self.max_len - len(current_space))
         else:
             inputs = inputs[:self.max_len]
             target = target[:self.max_len]
