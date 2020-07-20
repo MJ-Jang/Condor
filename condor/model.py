@@ -17,7 +17,6 @@ from collections import OrderedDict
 class KorSpaceCorrector:
     def __init__(self,
                  tok: CharacterTokenizer,
-                 threshold: float = 0.6,
                  d_model: int = 256,
                  n_head: int = 4,
                  n_layers: int = 2,
@@ -41,7 +40,6 @@ class KorSpaceCorrector:
                            'pad_id': self.pad_id}
 
         self.model = TransformerSpaceCorrector(**self.model_conf)
-        self.threshold = threshold
         self.softmax = torch.nn.Softmax(dim=-1)
 
         if self.n_gpu == 1:
@@ -50,7 +48,7 @@ class KorSpaceCorrector:
             self.model = torch.nn.DataParallel(self.model)
             self.model = self.model.cuda()
 
-    def correct(self, text: str):
+    def correct(self, text: str, threshold: float = 0.6):
         x, space_id = generate_x_y(text)
         src_id = self.tok.tokenize(''.join(x))
         src_id = torch.LongTensor([src_id]).to(self.device)
@@ -62,14 +60,15 @@ class KorSpaceCorrector:
 
         pred = pred.tolist()
         prob = prob.tolist()
-        outp = self.post_process(space_id, pred[0], prob[0])
+        outp = self.post_process(space_id, pred[0], prob[0], threshold=threshold)
         outp = decode(x, outp).strip()
         return outp
 
-    def post_process(self, y, pred, prob):
+    @staticmethod
+    def post_process(y, pred, prob, threshold):
         outp = list()
         for y_, pred_, prob_ in zip(y, pred, prob):
-            if prob_ < self.threshold:
+            if prob_ < threshold:
                 outp.append(y_)
             else:
                 if y_ == 1:
