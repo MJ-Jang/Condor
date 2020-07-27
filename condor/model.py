@@ -8,6 +8,7 @@ import dill
 from condor.components.module import TransformerSpaceCorrector
 from condor.components.tokenizer import CharacterTokenizer
 from condor.components.dataset import SpacingDataset
+from condor.components.rule_corrector import RuleCorrector
 from condor.util import generate_x_y, decode
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -22,7 +23,10 @@ class KorSpaceCorrector:
                  n_layers: int = 2,
                  dim_ff: int = 256,
                  dropout: float = 0.5,
-                 use_gpu: bool = True):
+                 use_gpu: bool = True,
+                 rule_path: str = None,
+                 josa_path: str = None):
+
         self.device = 'cuda:0' if torch.cuda.is_available() and use_gpu else 'cpu'
         if self.device == 'cuda:0':
             self.n_gpu = torch.cuda.device_count()
@@ -48,6 +52,20 @@ class KorSpaceCorrector:
             self.model = torch.nn.DataParallel(self.model)
             self.model = self.model.cuda()
 
+        if not rule_path:
+            # use default
+            rule_filename = 'rules.txt'
+            here = os.path.dirname(__file__)
+            rule_path = os.path.join(here, "resources", rule_filename)
+
+        if not josa_path:
+            # use default
+            josa_filename = 'josa.txt'
+            here = os.path.dirname(__file__)
+            josa_path = os.path.join(here, "resources", josa_filename)
+
+        self.rule_corrector = RuleCorrector(rule_path, josa_path)
+
     def correct(self, text: str, threshold: float = 0.6):
         x, space_id = generate_x_y(text)
         src_id = self.tok.tokenize(''.join(x))
@@ -62,6 +80,7 @@ class KorSpaceCorrector:
         prob = prob.tolist()
         outp = self.post_process(space_id, pred[0], prob[0], threshold=threshold)
         outp = decode(x, outp).strip()
+        outp = self.rule_corrector.correct(outp).strip()
         return outp
 
     @staticmethod
@@ -152,14 +171,3 @@ class KorSpaceCorrector:
         with open(filename, "wb") as file:
             dill.dump(outp_dict, file, protocol=dill.HIGHEST_PROTOCOL)
         self.model.to(self.device)
-
-
-
-
-#
-# if __name__ == '__main__':
-#     sent = '이런개새끼야'
-#     model = SISCoModel()
-#     out = model.correct(sent)
-#     print(out)
-#
