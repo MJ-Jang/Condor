@@ -55,7 +55,3 @@ class RuleCorrector:
             rule_dict[word.replace(' ', '')] = repl
         pattern = '|'.join(sorted(pattern, key=lambda x: len(x), reverse=True))
         return rule_dict, pattern
-
-text = '바로 로 밍 요금제 정보좀 줘'
-aa = RuleCorrector('condor/resources/rules.txt', 'condor/resources/josa.txt')
-aa.correct_rule(text)
